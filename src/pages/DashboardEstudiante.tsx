@@ -56,7 +56,10 @@ const DashboardEstudiante: React.FC = () => {
           const userResponse = await getMyUser();
           setUsuario(userResponse.data.usuario);
 
-          const incidentesResponse = await listarIncidentes({ page: 0, size: 50 });
+          const incidentesResponse = await listarIncidentes(
+            { page: 0, size: 50 },
+            userResponse.data.usuario.rol,
+          );
           setIncidentes(incidentesResponse.data.contents);
         }
       } catch (error) {

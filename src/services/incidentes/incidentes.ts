@@ -1,5 +1,6 @@
 // services/incidentes.ts
 import Api from "../api";
+import type { AxiosResponse } from "axios";
 
 export type TipoIncidente =
   | "mantenimiento"
@@ -140,28 +141,89 @@ export async function buscarIncidente(payload: BuscarIncidenteRequest) {
 }
 
 /**
- * Listar Incidentes
- * POST /incidentes/listar
- * body: { page, size, limit? }
+ * Listar Incidentes (paginado) con filtros opcionales
+ * POST /incidente/list
+ * body: { page, size, estado?, tipo?, nivel_urgencia? }
+ * Nota: opcionalmente se puede pasar `role` al llamar la función para mapear
+ * la forma de los items según el rol del solicitante (cliente-side).
  */
 export interface ListarIncidentesRequest {
   page: number;
   size: number;
-  limit?: number;
+  // filtros opcionales soportados por el backend
+  estado?: EstadoIncidente;
+  tipo?: TipoIncidente;
+  nivel_urgencia?: NivelUrgencia;
 }
 
-export interface ListarIncidentesResponse {
-  contents: Incidente[];
+export interface PaginacionResponse<T = any> {
+  contents: T[];
   page: number;
   size: number;
   totalElements: number;
   totalPages: number;
 }
 
-export async function listarIncidentes(payload: ListarIncidentesRequest) {
+export type Role = "estudiante" | "autoridad" | "administrador_empleado" | string;
+
+export async function listarIncidentes(
+  payload: ListarIncidentesRequest,
+  role?: Role,
+): Promise<AxiosResponse<PaginacionResponse<any>>> {
   const api = await Api.getInstance("reportes");
 
-  return api.post<ListarIncidentesRequest, ListarIncidentesResponse>(payload, {
-    url: "/incidentes/listar",
+  // llamar al endpoint solicitado por la API
+  const resp = await api.post<ListarIncidentesRequest, PaginacionResponse<any>>(payload, {
+    url: "/incidente/list",
   });
+
+  // si no se especifica role, devolvemos la respuesta tal cual
+  if (!role) return resp;
+
+  // mapear según rol: estudiante => resumen, autoridad/administrador_empleado => detalle
+  const isStudent = role === "estudiante";
+
+  const original = resp.data || { contents: [] };
+
+  const mappedContents = (original.contents || []).map((item: any) => {
+    if (isStudent) {
+      return {
+        titulo: item.titulo,
+        piso: item.piso,
+        tipo: item.tipo,
+        nivel_urgencia: item.nivel_urgencia,
+        estado: item.estado,
+        created_at: item.created_at,
+        updated_at: item.updated_at,
+      };
+    }
+
+    // autoridad / administrador_empleado -> detalle completo
+    return {
+      incidente_id: item.incidente_id || item.id || item.uuid,
+      titulo: item.titulo,
+      descripcion: item.descripcion,
+      piso: item.piso,
+      ubicacion: item.ubicacion || item.ubicacion_text || item.ubicacion_descripcion,
+      tipo: item.tipo,
+      nivel_urgencia: item.nivel_urgencia,
+      evidencias: item.evidencias || [],
+      estado: item.estado,
+      usuario_correo: item.usuario_correo || item.reportado_por_email,
+      created_at: item.created_at,
+      updated_at: item.updated_at,
+      coordenadas: item.coordenadas || item.location || null,
+    };
+  });
+
+  // Reemplazar el data en la respuesta para mantener compatibilidad con llamados existentes
+  resp.data = {
+    contents: mappedContents,
+    page: original.page,
+    size: original.size,
+    totalElements: original.totalElements,
+    totalPages: original.totalPages,
+  } as PaginacionResponse<any>;
+
+  return resp;
 }

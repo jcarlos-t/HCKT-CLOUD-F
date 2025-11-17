@@ -41,10 +41,10 @@ const DashboardPersonal: React.FC = () => {
           const userResponse = await getMyUser();
           setUsuario(userResponse.data.usuario);
 
-          const incidentesResponse = await listarIncidentes({
-            page: 0,
-            size: 100,
-          });
+          const incidentesResponse = await listarIncidentes(
+            { page: 0, size: 100 },
+            userResponse.data.usuario.rol,
+          );
           setIncidentes(incidentesResponse.data.contents);
         }
       } catch (error) {
@@ -58,7 +58,10 @@ const DashboardPersonal: React.FC = () => {
   }, [session]);
 
   const recargarIncidentes = async () => {
-    const incidentesResponse = await listarIncidentes({ page: 0, size: 100 });
+    const incidentesResponse = await listarIncidentes(
+      { page: 0, size: 100 },
+      usuario?.rol,
+    );
     setIncidentes(incidentesResponse.data.contents);
   };
 
