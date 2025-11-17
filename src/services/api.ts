@@ -59,6 +59,14 @@ export default class Api {
 		return Api._instances.get(type)!;
 	}
 
+	public static getWebSocketUrl(): string {
+		const wsUrl = import.meta.env.VITE_API_WEBSOCKETS || "";
+		if (!wsUrl) {
+			throw new Error("Variable de entorno VITE_API_WEBSOCKETS no configurada");
+		}
+		return wsUrl;
+	}
+
 	public async request<RequestType, ResponseType>(config: AxiosRequestConfig) {
 		const headers: RawAxiosRequestHeaders = {
 			"Content-Type": "application/json",
