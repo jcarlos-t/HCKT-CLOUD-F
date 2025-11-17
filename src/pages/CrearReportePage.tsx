@@ -25,11 +25,9 @@ const CrearReportePage: React.FC = () => {
   const tiposIncidente: { value: TipoIncidente; label: string }[] = [
     { value: "mantenimiento", label: "Mantenimiento" },
     { value: "seguridad", label: "Seguridad" },
-    { value: "infraestructura", label: "Infraestructura" },
-    { value: "servicios", label: "Servicios" },
-    { value: "emergencia", label: "Emergencia" },
+    { value: "TI", label: "TI" },
     { value: "limpieza", label: "Limpieza" },
-    { value: "otros", label: "Otros" },
+    { value: "otro", label: "Otros" },
   ];
 
   const nivelesUrgencia: { value: NivelUrgencia; label: string }[] = [
