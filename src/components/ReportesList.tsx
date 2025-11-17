@@ -1,8 +1,11 @@
 // src/components/ReportesList.tsx
 import React, { useEffect, useState } from "react";
+import { useAuthContext } from "../contexts/AuthContext";
+import { getMyUser } from "../services/usuario/usuario";
 import {
   listarIncidentes,
   type Incidente,
+  type ListarIncidentesRequest,
 } from "../services/incidentes/incidentes";
 
 const ReportesList: React.FC = () => {
@@ -10,12 +13,29 @@ const ReportesList: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string>("");
 
-  const fetchIncidentes = async () => {
+  const [role, setRole] = useState<string | null>(null);
+  // filtros
+  const [estadoFilter, setEstadoFilter] = useState<string>("");
+  const [tipoFilter, setTipoFilter] = useState<string>("");
+  const [urgenciaFilter, setUrgenciaFilter] = useState<string>("");
+
+  const { session } = useAuthContext();
+
+  const fetchIncidentes = async (opts?: { page?: number; size?: number }) => {
     try {
       setIsLoading(true);
       // ✅ agregar page para cumplir con ListarIncidentesRequest
-      const response = await listarIncidentes({ page: 0, size: 50 });
-      setIncidentes(response.data.contents);
+      const payload: ListarIncidentesRequest = {
+        page: opts?.page ?? 0,
+        size: opts?.size ?? 50,
+      };
+
+      if (estadoFilter) payload.estado = estadoFilter as any;
+      if (tipoFilter) payload.tipo = tipoFilter as any;
+      if (urgenciaFilter) payload.nivel_urgencia = urgenciaFilter as any;
+
+      const response = await listarIncidentes(payload, role ?? undefined);
+      setIncidentes(response.data.contents || []);
       setError("");
     } catch (err) {
       console.error("Error al obtener incidentes:", err);
@@ -26,8 +46,31 @@ const ReportesList: React.FC = () => {
   };
 
   useEffect(() => {
+    let mounted = true;
+    (async () => {
+      if (session) {
+        try {
+          const { data } = await getMyUser();
+          if (!mounted) return;
+          setRole(data.usuario.rol);
+        } catch (err) {
+          console.warn("No se pudo obtener usuario:", err);
+        }
+      }
+
+      await fetchIncidentes();
+    })();
+
+    return () => {
+      mounted = false;
+    };
+  }, [session]);
+
+  useEffect(() => {
+    // recargar cuando cambian filtros o role
     fetchIncidentes();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [estadoFilter, tipoFilter, urgenciaFilter, role]);
 
   // Estados alineados al backend: "reportado" | "en_progreso" | "resuelto"
   const getEstadoColor = (estado?: string) => {
@@ -93,6 +136,43 @@ const ReportesList: React.FC = () => {
         <h2 className="text-lg font-semibold text-slate-900">
           Reportes recientes
         </h2>
+      </div>
+      <div className="flex gap-3">
+        <select
+          value={estadoFilter}
+          onChange={(e) => setEstadoFilter(e.target.value)}
+          className="border rounded px-2 py-1"
+        >
+          <option value="">Todos los estados</option>
+          <option value="reportado">Reportado</option>
+          <option value="en_progreso">En Progreso</option>
+          <option value="resuelto">Resuelto</option>
+        </select>
+
+        <select
+          value={tipoFilter}
+          onChange={(e) => setTipoFilter(e.target.value)}
+          className="border rounded px-2 py-1"
+        >
+          <option value="">Todos los tipos</option>
+          <option value="mantenimiento">Mantenimiento</option>
+          <option value="seguridad">Seguridad</option>
+          <option value="limpieza">Limpieza</option>
+          <option value="TI">TI</option>
+          <option value="otro">Otro</option>
+        </select>
+
+        <select
+          value={urgenciaFilter}
+          onChange={(e) => setUrgenciaFilter(e.target.value)}
+          className="border rounded px-2 py-1"
+        >
+          <option value="">Todas las urgencias</option>
+          <option value="bajo">Bajo</option>
+          <option value="medio">Medio</option>
+          <option value="alto">Alto</option>
+          <option value="critico">Crítico</option>
+        </select>
       </div>
 
       {isLoading ? (
