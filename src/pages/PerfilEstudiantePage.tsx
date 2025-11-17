@@ -7,6 +7,7 @@ import {
   deleteUserByCorreo,
   changeMyPassword,
   type Usuario,
+  type UpdateMyUserRequest,
 } from "../services/usuario/usuario";
 import { useAuthContext } from "../contexts/AuthContext";
 
@@ -40,7 +41,7 @@ const PerfilEstudiantePage: React.FC = () => {
         setUsuario(res.data.usuario);
         setNombre(res.data.usuario.nombre);
         setCorreo(res.data.usuario.correo);
-      } catch (error) {
+      } catch (error: unknown) {
         console.error("Error cargando usuario:", error);
       } finally {
         setIsLoading(false);
@@ -52,8 +53,7 @@ const PerfilEstudiantePage: React.FC = () => {
   const isValidName = (value: string): boolean => {
     const trimmed = value.trim();
     if (trimmed.length < 3) return false;
-    const nameRegex =
-      /^[A-Za-zÀ-ÿ\u00f1\u00d1\s'.-]+$/;
+    const nameRegex = /^[A-Za-zÀ-ÿ\u00f1\u00d1\s'.-]+$/;
     const parts = trimmed.split(/\s+/);
     if (parts.length < 2) return false;
     return nameRegex.test(trimmed);
@@ -61,23 +61,26 @@ const PerfilEstudiantePage: React.FC = () => {
 
   const isValidEmail = (value: string): boolean => {
     const trimmed = value.trim();
-    const emailRegex =
-      /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[A-Za-z]{2,}$/;
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[A-Za-z]{2,}$/;
     return emailRegex.test(trimmed);
     // Si quieres solo @utec.edu.pe:
     // return /^[a-zA-Z0-9._%+-]+@utec\.edu\.pe$/i.test(trimmed);
   };
 
   const isValidPassword = (value: string): string | null => {
-    if (value.length < 6) return "La contraseña debe tener al menos 6 caracteres";
-    if (/\s/.test(value)) return "La contraseña no debe contener espacios";
+    if (value.length < 6) {
+      return "La contraseña debe tener al menos 6 caracteres";
+    }
+    if (/\s/.test(value)) {
+      return "La contraseña no debe contener espacios";
+    }
     if (!/[A-Za-z]/.test(value) || !/\d/.test(value)) {
       return "La contraseña debe incluir al menos una letra y un número";
     }
     return null;
   };
 
-  const handleSaveProfile = async (e: React.FormEvent) => {
+  const handleSaveProfile = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!usuario) return;
 
@@ -85,7 +88,7 @@ const PerfilEstudiantePage: React.FC = () => {
 
     if (!isValidName(nombre)) {
       setProfileMessage(
-        "Ingresa un nombre completo válido (solo letras, mínimo nombre y apellido)"
+        "Ingresa un nombre completo válido (solo letras, mínimo nombre y apellido)",
       );
       return;
     }
@@ -95,27 +98,37 @@ const PerfilEstudiantePage: React.FC = () => {
       return;
     }
 
+    const trimmedNombre = nombre.trim();
+    const trimmedCorreo = correo.trim();
+
+    const payload: UpdateMyUserRequest = {
+      correo: usuario.correo,
+    };
+
+    if (trimmedNombre !== usuario.nombre) {
+      payload.nombre = trimmedNombre;
+    }
+    if (trimmedCorreo !== usuario.correo) {
+      payload.nuevo_correo = trimmedCorreo;
+    }
+
+    if (!payload.nombre && !payload.nuevo_correo) {
+      setProfileMessage("No hay cambios para guardar");
+      return;
+    }
+
     try {
       setSavingProfile(true);
-      const payload = {
-        correo: usuario.correo,
-        nombre: nombre.trim() !== usuario.nombre ? nombre.trim() : undefined,
-        nuevo_correo:
-          correo.trim() !== usuario.correo ? correo.trim() : undefined,
-      };
-
-      if (!payload.nombre && !payload.nuevo_correo) {
-        setProfileMessage("No hay cambios para guardar");
-        return;
-      }
-
       const res = await updateMyUser(payload);
       setUsuario(res.data.usuario);
+      setNombre(res.data.usuario.nombre);
+      setCorreo(res.data.usuario.correo);
       setProfileMessage("Perfil actualizado correctamente");
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error actualizando perfil:", error);
+      const err = error as { response?: { data?: { message?: string } } };
       const msg =
-        error?.response?.data?.message ||
+        err?.response?.data?.message ||
         "No se pudo actualizar el perfil. Intenta nuevamente.";
       setProfileMessage(msg);
     } finally {
@@ -123,7 +136,9 @@ const PerfilEstudiantePage: React.FC = () => {
     }
   };
 
-  const handleChangePassword = async (e: React.FormEvent) => {
+  const handleChangePassword = async (
+    e: React.FormEvent<HTMLFormElement>,
+  ) => {
     e.preventDefault();
     setPasswordMessage(null);
 
@@ -153,10 +168,11 @@ const PerfilEstudiantePage: React.FC = () => {
       setCurrentPassword("");
       setNewPassword("");
       setConfirmNewPassword("");
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error cambiando contraseña:", error);
+      const err = error as { response?: { data?: { message?: string } } };
       const msg =
-        error?.response?.data?.message ||
+        err?.response?.data?.message ||
         "No se pudo cambiar la contraseña. Intenta nuevamente.";
       setPasswordMessage(msg);
     } finally {
@@ -164,14 +180,14 @@ const PerfilEstudiantePage: React.FC = () => {
     }
   };
 
-  const handleDeleteAccount = async (e: React.FormEvent) => {
+  const handleDeleteAccount = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setDeleteMessage(null);
     if (!usuario) return;
 
     if (deleteConfirm !== usuario.correo) {
       setDeleteMessage(
-        "Debes escribir tu correo exactamente para confirmar la eliminación."
+        "Debes escribir tu correo exactamente para confirmar la eliminación.",
       );
       return;
     }
@@ -182,10 +198,11 @@ const PerfilEstudiantePage: React.FC = () => {
       setDeleteMessage("Cuenta eliminada correctamente.");
       logout();
       navigate("/");
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error eliminando cuenta:", error);
+      const err = error as { response?: { data?: { message?: string } } };
       const msg =
-        error?.response?.data?.message ||
+        err?.response?.data?.message ||
         "No se pudo eliminar la cuenta. Intenta nuevamente.";
       setDeleteMessage(msg);
     } finally {
@@ -197,7 +214,7 @@ const PerfilEstudiantePage: React.FC = () => {
     return (
       <div className="min-h-screen bg-gradient-to-br from-sky-50 via-white to-sky-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-sky-600"></div>
+          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-sky-600" />
           <p className="mt-4 text-slate-600">Cargando perfil...</p>
         </div>
       </div>
@@ -245,13 +262,13 @@ const PerfilEstudiantePage: React.FC = () => {
 
           <form onSubmit={handleSaveProfile} className="space-y-4">
             {profileMessage && (
-              <div className="text-sm px-4 py-2 rounded-lg border mb-2
-                ${
-                  profileMessage.includes('correctamente') ||
-                  profileMessage.includes('No hay cambios')
-                    ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
-                    : 'bg-red-50 border-red-200 text-red-700'
-                }"
+              <div
+                className={`text-sm px-4 py-2 rounded-lg border mb-2 ${
+                  profileMessage.includes("correctamente") ||
+                  profileMessage.includes("No hay cambios")
+                    ? "bg-emerald-50 border-emerald-200 text-emerald-700"
+                    : "bg-red-50 border-red-200 text-red-700"
+                }`}
               >
                 {profileMessage}
               </div>
@@ -312,11 +329,13 @@ const PerfilEstudiantePage: React.FC = () => {
 
           <form onSubmit={handleChangePassword} className="space-y-4">
             {passwordMessage && (
-              <div className={`text-sm px-4 py-2 rounded-lg border mb-2 ${
-                passwordMessage.includes("correctamente")
-                  ? "bg-emerald-50 border-emerald-200 text-emerald-700"
-                  : "bg-red-50 border-red-200 text-red-700"
-              }`}>
+              <div
+                className={`text-sm px-4 py-2 rounded-lg border mb-2 ${
+                  passwordMessage.includes("correctamente")
+                    ? "bg-emerald-50 border-emerald-200 text-emerald-700"
+                    : "bg-red-50 border-red-200 text-red-700"
+                }`}
+              >
                 {passwordMessage}
               </div>
             )}
@@ -378,7 +397,9 @@ const PerfilEstudiantePage: React.FC = () => {
                 disabled={changingPassword}
                 className="px-6 py-2 bg-slate-800 text-white rounded-lg text-sm font-medium hover:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-700 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {changingPassword ? "Cambiando contraseña..." : "Cambiar contraseña"}
+                {changingPassword
+                  ? "Cambiando contraseña..."
+                  : "Cambiar contraseña"}
               </button>
             </div>
           </form>
@@ -396,11 +417,13 @@ const PerfilEstudiantePage: React.FC = () => {
 
           <form onSubmit={handleDeleteAccount} className="space-y-4">
             {deleteMessage && (
-              <div className={`text-sm px-4 py-2 rounded-lg border mb-2 ${
-                deleteMessage.includes("correctamente")
-                  ? "bg-emerald-50 border-emerald-200 text-emerald-700"
-                  : "bg-red-50 border-red-200 text-red-700"
-              }`}>
+              <div
+                className={`text-sm px-4 py-2 rounded-lg border mb-2 ${
+                  deleteMessage.includes("correctamente")
+                    ? "bg-emerald-50 border-emerald-200 text-emerald-700"
+                    : "bg-red-50 border-red-200 text-red-700"
+                }`}
+              >
                 {deleteMessage}
               </div>
             )}

@@ -10,6 +10,11 @@ import TiempoResolucionCard from "../components/analitica/TiempoResolucionCard";
 import TopUsuariosReportadores from "../components/analitica/TopUsuariosReportadores";
 import TriggerETLButton from "../components/analitica/TriggerETLButton";
 import MetricasPrincipalesCards from "../components/analitica/MetricasPrincipalesCards";
+import GestionUsuarios from "../components/gestion/GestionUsuarios";
+import GestionEmpleados from "../components/gestion/GestionEmpleados";
+import LogsViewer from "../components/logs/LogsViewer";
+
+type TabType = "analitica" | "usuarios" | "empleados" | "logs";
 
 const DashboardAutoridad: React.FC = () => {
   const navigate = useNavigate();
@@ -17,6 +22,7 @@ const DashboardAutoridad: React.FC = () => {
   const [usuario, setUsuario] = useState<Usuario | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [activeTab, setActiveTab] = useState<TabType>("analitica");
 
   const fetchData = async () => {
     try {
@@ -69,7 +75,7 @@ const DashboardAutoridad: React.FC = () => {
                 <h1 className="text-xl font-semibold text-slate-900">
                   AlertaUTEC
                 </h1>
-                <p className="text-xs text-slate-500">Panel de Analítica</p>
+                <p className="text-xs text-slate-500">Panel de Autoridad</p>
               </div>
             </div>
 
@@ -100,44 +106,102 @@ const DashboardAutoridad: React.FC = () => {
         </div>
       </header>
 
+      {/* Navigation Tabs */}
+      <div className="bg-white border-b border-slate-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <nav className="flex gap-8">
+            <button
+              onClick={() => setActiveTab("analitica")}
+              className={`py-4 px-2 border-b-2 font-medium text-sm transition ${
+                activeTab === "analitica"
+                  ? "border-sky-600 text-sky-600"
+                  : "border-transparent text-slate-600 hover:text-slate-900 hover:border-slate-300"
+              }`}
+            >
+              📊 Analítica
+            </button>
+            <button
+              onClick={() => setActiveTab("usuarios")}
+              className={`py-4 px-2 border-b-2 font-medium text-sm transition ${
+                activeTab === "usuarios"
+                  ? "border-sky-600 text-sky-600"
+                  : "border-transparent text-slate-600 hover:text-slate-900 hover:border-slate-300"
+              }`}
+            >
+              👥 Gestión de Usuarios
+            </button>
+            <button
+              onClick={() => setActiveTab("empleados")}
+              className={`py-4 px-2 border-b-2 font-medium text-sm transition ${
+                activeTab === "empleados"
+                  ? "border-sky-600 text-sky-600"
+                  : "border-transparent text-slate-600 hover:text-slate-900 hover:border-slate-300"
+              }`}
+            >
+              👷 Gestión de Empleados
+            </button>
+            <button
+              onClick={() => setActiveTab("logs")}
+              className={`py-4 px-2 border-b-2 font-medium text-sm transition ${
+                activeTab === "logs"
+                  ? "border-sky-600 text-sky-600"
+                  : "border-transparent text-slate-600 hover:text-slate-900 hover:border-slate-300"
+              }`}
+            >
+              📋 Trazas del Sistema
+            </button>
+          </nav>
+        </div>
+      </div>
+
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Header con botón ETL */}
-        <div className="bg-white rounded-2xl shadow-sm border border-sky-100 p-6 mb-8">
-          <div className="flex items-start justify-between">
-            <div>
-              <h2 className="text-2xl font-semibold text-slate-900 mb-2">
-                Analítica de Reportes y Soluciones
-              </h2>
-              <p className="text-slate-600">
-                Análisis completo de incidentes y tendencias en el campus.
-              </p>
+        {activeTab === "analitica" && (
+          <>
+            {/* Header con botón ETL */}
+            <div className="bg-white rounded-2xl shadow-sm border border-sky-100 p-6 mb-8">
+              <div className="flex items-start justify-between">
+                <div>
+                  <h2 className="text-2xl font-semibold text-slate-900 mb-2">
+                    Analítica de Reportes y Soluciones
+                  </h2>
+                  <p className="text-slate-600">
+                    Análisis completo de incidentes y tendencias en el campus.
+                  </p>
+                </div>
+                <TriggerETLButton onSuccess={handleRefreshData} />
+              </div>
             </div>
-            <TriggerETLButton onSuccess={handleRefreshData} />
-          </div>
-        </div>
 
-        {/* Métricas Principales */}
-        <MetricasPrincipalesCards key={refreshKey} />
+            {/* Métricas Principales */}
+            <MetricasPrincipalesCards key={refreshKey} />
 
-        {/* Tiempo de Resolución */}
-        <div className="mb-8">
-          <TiempoResolucionCard key={refreshKey} />
-        </div>
+            {/* Tiempo de Resolución */}
+            <div className="mb-8">
+              <TiempoResolucionCard key={refreshKey} />
+            </div>
 
-        {/* Análisis por Categorías */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-          <IncidentesPorTipoChart key={`tipo-${refreshKey}`} />
-          <IncidentesPorUrgenciaChart key={`urgencia-${refreshKey}`} />
-        </div>
+            {/* Análisis por Categorías */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+              <IncidentesPorTipoChart key={`tipo-${refreshKey}`} />
+              <IncidentesPorUrgenciaChart key={`urgencia-${refreshKey}`} />
+            </div>
 
-        {/* Por Piso */}
-        <div className="mb-8">
-          <IncidentesPorPisoChart key={`piso-${refreshKey}`} />
-        </div>
+            {/* Por Piso */}
+            <div className="mb-8">
+              <IncidentesPorPisoChart key={`piso-${refreshKey}`} />
+            </div>
 
-        {/* Top Usuarios Reportadores */}
-        <TopUsuariosReportadores key={`usuarios-${refreshKey}`} />
+            {/* Top Usuarios Reportadores */}
+            <TopUsuariosReportadores key={`usuarios-${refreshKey}`} />
+          </>
+        )}
+
+        {activeTab === "usuarios" && <GestionUsuarios />}
+
+        {activeTab === "empleados" && <GestionEmpleados />}
+
+        {activeTab === "logs" && <LogsViewer />}
       </main>
     </div>
   );

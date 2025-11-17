@@ -23,7 +23,8 @@ const DashboardEstudiante: React.FC = () => {
           const userResponse = await getMyUser();
           setUsuario(userResponse.data.usuario);
 
-          const incidentesResponse = await listarIncidentes({ size: 50 });
+          // ✅ agregar page para cumplir con ListarIncidentesRequest
+          const incidentesResponse = await listarIncidentes({ page: 0, size: 50 });
           setIncidentes(incidentesResponse.data.contents);
         }
       } catch (error) {
@@ -36,6 +37,7 @@ const DashboardEstudiante: React.FC = () => {
     fetchData();
   }, [session]);
 
+  // Estados alineados con el backend: "reportado" | "en_progreso" | "resuelto"
   const estadisticas = {
     pendientes: incidentes.filter((i) => i.estado === "reportado").length,
     enAtencion: incidentes.filter((i) => i.estado === "en_progreso").length,
@@ -114,10 +116,8 @@ const DashboardEstudiante: React.FC = () => {
       </header>
 
       {/* Main Content */}
-      {/* … resto igual */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* (contenido igual que antes) */}
-        {/* ... */}
+        {/* Bienvenida */}
         <div className="bg-white rounded-2xl shadow-sm border border-sky-100 p-6 mb-8">
           <h2 className="text-2xl font-semibold text-slate-900 mb-2">
             ¡Bienvenido, {usuario?.nombre || "Estudiante"}!
@@ -127,9 +127,101 @@ const DashboardEstudiante: React.FC = () => {
           </p>
         </div>
 
-        {/* Stats Cards ... */}
-        {/* Acciones ... */}
-        {/* Lista de reportes */}
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <div className="bg-white rounded-xl shadow-sm border border-sky-100 p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-slate-600 mb-1">
+                  Pendientes
+                </p>
+                <p className="text-3xl font-bold text-slate-900">
+                  {estadisticas.pendientes}
+                </p>
+              </div>
+              <div className="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center">
+                <span className="text-2xl">⏳</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-xl shadow-sm border border-sky-100 p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-slate-600 mb-1">
+                  En Atención
+                </p>
+                <p className="text-3xl font-bold text-slate-900">
+                  {estadisticas.enAtencion}
+                </p>
+              </div>
+              <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                <span className="text-2xl">🔧</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-xl shadow-sm border border-sky-100 p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-slate-600 mb-1">
+                  Resueltos
+                </p>
+                <p className="text-3xl font-bold text-slate-900">
+                  {estadisticas.resueltos}
+                </p>
+              </div>
+              <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                <span className="text-2xl">✅</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-xl shadow-sm border border-sky-100 p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-slate-600 mb-1">Total</p>
+                <p className="text-3xl font-bold text-slate-900">
+                  {estadisticas.total}
+                </p>
+              </div>
+              <div className="w-12 h-12 bg-sky-100 rounded-lg flex items-center justify-center">
+                <span className="text-2xl">📊</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Actions Section */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="bg-white rounded-xl shadow-sm border border-sky-100 p-6">
+            <h3 className="text-lg font-semibold text-slate-900 mb-4">
+              Reportar Incidente
+            </h3>
+            <p className="text-slate-600 mb-4">
+              Reporta un nuevo incidente en el campus para que sea atendido
+              rápidamente.
+            </p>
+            <button
+              onClick={() => navigate("/dashboard/reportar")}
+              className="w-full bg-sky-600 text-white py-3 rounded-lg font-medium hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2 transition"
+            >
+              Nuevo Reporte
+            </button>
+          </div>
+
+          <div className="bg-white rounded-xl shadow-sm border border-sky-100 p-6">
+            <h3 className="text-lg font-semibold text-slate-900 mb-2">
+              Mis Reportes
+            </h3>
+            <p className="text-slate-600 mb-4">
+              Gracias por contribuir a la mejora constante de UTEC. Tus reportes
+              recientes aparecen en la sección de abajo. Que tengas un buen día.
+            </p>
+          </div>
+        </div>
+
+        {/* Lista de reportes del estudiante dentro del dashboard */}
         <ReportesList />
       </main>
     </div>

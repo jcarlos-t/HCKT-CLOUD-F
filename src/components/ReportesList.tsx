@@ -13,7 +13,8 @@ const ReportesList: React.FC = () => {
   const fetchIncidentes = async () => {
     try {
       setIsLoading(true);
-      const response = await listarIncidentes({ size: 50 });
+      // ✅ agregar page para cumplir con ListarIncidentesRequest
+      const response = await listarIncidentes({ page: 0, size: 50 });
       setIncidentes(response.data.contents);
       setError("");
     } catch (err) {
@@ -28,9 +29,10 @@ const ReportesList: React.FC = () => {
     fetchIncidentes();
   }, []);
 
+  // Estados alineados al backend: "reportado" | "en_progreso" | "resuelto"
   const getEstadoColor = (estado?: string) => {
     switch (estado) {
-      case "pendiente":
+      case "reportado":
         return "bg-yellow-100 text-yellow-800";
       case "en_progreso":
         return "bg-blue-100 text-blue-800";
@@ -43,8 +45,8 @@ const ReportesList: React.FC = () => {
 
   const getEstadoLabel = (estado?: string) => {
     switch (estado) {
-      case "pendiente":
-        return "Pendiente";
+      case "reportado":
+        return "Reportado";
       case "en_progreso":
         return "En Progreso";
       case "resuelto":
@@ -62,6 +64,8 @@ const ReportesList: React.FC = () => {
         return "bg-orange-100 text-orange-800";
       case "bajo":
         return "bg-green-100 text-green-800";
+      case "critico":
+        return "bg-red-200 text-red-900";
       default:
         return "bg-gray-100 text-gray-800";
     }
