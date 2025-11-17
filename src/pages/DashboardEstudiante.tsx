@@ -264,7 +264,8 @@ const DashboardEstudiante: React.FC = () => {
           <div className="bg-white rounded-xl shadow-sm border border-sky-100 p-6">
               <h3 className="text-lg font-semibold text-slate-900 mb-2">Mis Reportes</h3>
               <p className="text-slate-600 mb-4">
-                Ve el historial completo de tus reportes y su estado.
+                Gracias por contribuir a la mejora constante de UTEC. Tus reportes
+                recientes aparecen a continuación.
               </p>
               <div className="flex items-center gap-2">
                 <button
