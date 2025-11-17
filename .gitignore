@@ -15,7 +15,11 @@ dist-ssr
 .idea
 .DS_Store
 *.suo
+<<<<<<< HEAD
 *.ntvs*
+=======
+.ntvs
+>>>>>>> 2b42d228175ab56d36b1caa1d4622edf8509bb69
 *.njsproj
 *.sln
 *.sw?

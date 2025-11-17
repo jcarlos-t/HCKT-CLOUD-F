@@ -1,5 +1,5 @@
 // src/pages/DashboardEstudiante.tsx
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuthContext } from "../contexts/AuthContext";
 import { getMyUser, type Usuario } from "../services/usuario/usuario";
@@ -8,6 +8,13 @@ import {
   type Incidente,
 } from "../services/incidentes/incidentes";
 import ReportesList from "../components/ReportesList";
+import NotificacionesContainer from "../components/NotificacionesContainer";
+import { useWebSocket } from "../hooks/useWebSocket";
+import type { NotificacionWebSocket } from "../interfaces/websocket.interface";
+
+interface NotificacionConId extends NotificacionWebSocket {
+  id: string;
+}
 
 const DashboardEstudiante: React.FC = () => {
   const navigate = useNavigate();
@@ -15,6 +22,32 @@ const DashboardEstudiante: React.FC = () => {
   const [usuario, setUsuario] = useState<Usuario | null>(null);
   const [incidentes, setIncidentes] = useState<Incidente[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [notificaciones, setNotificaciones] = useState<NotificacionConId[]>([]);
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  // Callback para manejar notificaciones WebSocket
+  const handleNotificacion = useCallback((notificacion: NotificacionWebSocket) => {
+    console.log("📬 Nueva notificación en Dashboard:", notificacion);
+
+    // Agregar notificación a la lista con un ID único
+    const notificacionConId: NotificacionConId = {
+      ...notificacion,
+      id: `${Date.now()}-${Math.random()}`,
+    };
+
+    setNotificaciones((prev) => [notificacionConId, ...prev].slice(0, 5)); // Máximo 5 notificaciones
+
+    // Actualizar lista de incidentes
+    setRefreshKey((prev) => prev + 1);
+  }, []);
+
+  // Conectar WebSocket - FIX: session ya ES el token, no session.token
+  const { isConnected } = useWebSocket(session || null, handleNotificacion);
+
+  // Remover notificación
+  const handleRemoveNotificacion = useCallback((id: string) => {
+    setNotificaciones((prev) => prev.filter((n) => n.id !== id));
+  }, []);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -23,7 +56,6 @@ const DashboardEstudiante: React.FC = () => {
           const userResponse = await getMyUser();
           setUsuario(userResponse.data.usuario);
 
-          // ✅ agregar page para cumplir con ListarIncidentesRequest
           const incidentesResponse = await listarIncidentes({ page: 0, size: 50 });
           setIncidentes(incidentesResponse.data.contents);
         }
@@ -35,7 +67,7 @@ const DashboardEstudiante: React.FC = () => {
     };
 
     fetchData();
-  }, [session]);
+  }, [session, refreshKey]); // Agregar refreshKey como dependencia
 
   // Estados alineados con el backend: "reportado" | "en_progreso" | "resuelto"
   const estadisticas = {
@@ -67,6 +99,12 @@ const DashboardEstudiante: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-sky-50 via-white to-sky-50">
+      {/* Contenedor de notificaciones */}
+      <NotificacionesContainer
+        notificaciones={notificaciones}
+        onRemove={handleRemoveNotificacion}
+      />
+
       {/* Header */}
       <header className="bg-white shadow-sm border-b border-sky-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
@@ -81,6 +119,13 @@ const DashboardEstudiante: React.FC = () => {
                 </h1>
                 <p className="text-xs text-slate-500">Panel de Estudiante</p>
               </div>
+              {/* Indicador de conexión WebSocket */}
+              {isConnected && (
+                <div className="flex items-center gap-2 px-2 py-1 bg-green-100 rounded-full">
+                  <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                  <span className="text-xs text-green-700 font-medium">En línea</span>
+                </div>
+              )}
             </div>
 
             <div className="flex items-center gap-4">
@@ -222,7 +267,7 @@ const DashboardEstudiante: React.FC = () => {
         </div>
 
         {/* Lista de reportes del estudiante dentro del dashboard */}
-        <ReportesList />
+        <ReportesList key={refreshKey} />
       </main>
     </div>
   );
