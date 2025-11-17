@@ -172,29 +172,10 @@ export async function listarIncidentes(
 ): Promise<AxiosResponse<PaginacionResponse<any>>> {
   const api = await Api.getInstance("reportes");
 
-  // intentar el endpoint nuevo; si hay un error de red/CORS, hacer fallback
-  // al endpoint anterior `/incidentes/listar` (muchos ambientes aún lo usan)
-  let resp = null as unknown as AxiosResponse<PaginacionResponse<any>>;
-  try {
-    resp = await api.post<ListarIncidentesRequest, PaginacionResponse<any>>(payload, {
-      url: "/incidente/list",
-    });
-  } catch (err: any) {
-    // Si falla por CORS / Network Error, intentar el endpoint anterior
-    const isNetworkError = err?.message === "Network Error" || err?.code === "ERR_NETWORK";
-    if (isNetworkError) {
-      try {
-        resp = await api.post<ListarIncidentesRequest, PaginacionResponse<any>>(payload, {
-          url: "/incidentes/listar",
-        });
-      } catch (err2) {
-        // rethrow el error original para que el caller lo maneje
-        throw err;
-      }
-    } else {
-      throw err;
-    }
-  }
+  // Hacer POST a `/incidentes/listar` y dejar que el backend aplique los filtros
+  const resp = await api.post<ListarIncidentesRequest, PaginacionResponse<any>>(payload, {
+    url: "/incidentes/listar",
+  });
 
   // si no se especifica role, devolvemos la respuesta tal cual
   if (!role) return resp;
