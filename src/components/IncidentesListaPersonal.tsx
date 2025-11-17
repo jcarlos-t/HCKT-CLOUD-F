@@ -1,14 +1,22 @@
 // src/components/IncidentesListaPersonal.tsx
-import React from "react";
+import React, { useState } from "react";
 import {
   type Incidente,
   type EstadoIncidente,
+  type TipoIncidente,
+  type NivelUrgencia,
 } from "../services/incidentes/incidentes";
 
 interface Props {
   incidentes: Incidente[];
   onCambiarEstado: (incidenteId: string, nuevoEstado: EstadoIncidente) => void;
   onAbrirCompletar: (incidente: Incidente) => void;
+  // opcional: callback para aplicar filtros desde este componente
+  onApplyFilters?: (filters: {
+    estado?: EstadoIncidente | "";
+    tipo?: TipoIncidente | "";
+    nivel_urgencia?: NivelUrgencia | "";
+  }) => void | Promise<void>;
 }
 
 const getEstadoColor = (estado?: EstadoIncidente) => {
@@ -41,12 +49,71 @@ const IncidentesListaPersonal: React.FC<Props> = ({
   incidentes,
   onCambiarEstado,
   onAbrirCompletar,
+  onApplyFilters,
 }) => {
+  const [estadoFilter, setEstadoFilter] = useState<string>("");
+  const [tipoFilter, setTipoFilter] = useState<string>("");
+  const [urgenciaFilter, setUrgenciaFilter] = useState<string>("");
+
+  const aplicar = async () => {
+    if (onApplyFilters) {
+      await onApplyFilters({
+        estado: estadoFilter as any,
+        tipo: tipoFilter as any,
+        nivel_urgencia: urgenciaFilter as any,
+      });
+    }
+  };
   return (
     <div className="bg-white rounded-xl shadow-sm border border-sky-100 p-6">
       <h3 className="text-lg font-semibold text-slate-900 mb-4">
         Todos los Incidentes
       </h3>
+      {/* Filtros rápidos */}
+      <div className="flex gap-3 mb-4">
+        <select
+          value={estadoFilter}
+          onChange={(e) => setEstadoFilter(e.target.value)}
+          className="border rounded px-2 py-1"
+        >
+          <option value="">Todos los estados</option>
+          <option value="reportado">Reportado</option>
+          <option value="en_progreso">En Progreso</option>
+          <option value="resuelto">Resuelto</option>
+        </select>
+
+        <select
+          value={tipoFilter}
+          onChange={(e) => setTipoFilter(e.target.value)}
+          className="border rounded px-2 py-1"
+        >
+          <option value="">Todos los tipos</option>
+          <option value="mantenimiento">Mantenimiento</option>
+          <option value="seguridad">Seguridad</option>
+          <option value="limpieza">Limpieza</option>
+          <option value="TI">TI</option>
+          <option value="otro">Otro</option>
+        </select>
+
+        <select
+          value={urgenciaFilter}
+          onChange={(e) => setUrgenciaFilter(e.target.value)}
+          className="border rounded px-2 py-1"
+        >
+          <option value="">Todas las urgencias</option>
+          <option value="bajo">Bajo</option>
+          <option value="medio">Medio</option>
+          <option value="alto">Alto</option>
+          <option value="critico">Crítico</option>
+        </select>
+
+        <button
+          onClick={aplicar}
+          className="px-3 py-1 bg-sky-600 text-white rounded"
+        >
+          Aplicar
+        </button>
+      </div>
 
       {incidentes.length === 0 ? (
         <div className="text-center py-8 text-slate-500">

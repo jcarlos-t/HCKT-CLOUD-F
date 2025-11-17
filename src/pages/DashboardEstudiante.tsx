@@ -7,6 +7,7 @@ import {
   listarIncidentes,
   type Incidente,
 } from "../services/incidentes/incidentes";
+import { listarHistorial } from "../services/incidentes/incidentes";
 import ReportesList from "../components/ReportesList";
 import NotificacionesContainer from "../components/NotificacionesContainer";
 import { useWebSocket } from "../hooks/useWebSocket";
@@ -24,6 +25,13 @@ const DashboardEstudiante: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [notificaciones, setNotificaciones] = useState<NotificacionConId[]>([]);
   const [refreshKey, setRefreshKey] = useState(0);
+  // historial del estudiante (paginado)
+  const [historial, setHistorial] = useState<Incidente[]>([]);
+  const [historialPage, setHistorialPage] = useState(0);
+  const [historialSize] = useState(5);
+  const [historialTotalPages, setHistorialTotalPages] = useState(0);
+  const [historialLoading, setHistorialLoading] = useState(false);
+  const [historialEstadoFilter, setHistorialEstadoFilter] = useState<string>("");
 
   // Callback para manejar notificaciones WebSocket
   const handleNotificacion = useCallback((notificacion: NotificacionWebSocket) => {
@@ -61,6 +69,16 @@ const DashboardEstudiante: React.FC = () => {
             userResponse.data.usuario.rol,
           );
           setIncidentes(incidentesResponse.data.contents);
+          // cargar historial inicial (página 0)
+          try {
+            const histResp = await listarHistorial({ page: 0, size: historialSize });
+            setHistorial(histResp.data.contents || []);
+            setHistorialPage(histResp.data.page || 0);
+            setHistorialTotalPages(histResp.data.totalPages || 0);
+          } catch (err) {
+            console.warn("No se pudo cargar historial:", err);
+            setHistorial([]);
+          }
         }
       } catch (error) {
         console.error("Error al obtener datos:", error);
@@ -88,6 +106,39 @@ const DashboardEstudiante: React.FC = () => {
   const handleGoToProfile = () => {
     navigate("/dashboard/perfil");
   };
+
+  const formatDate = (dateString?: string) => {
+    if (!dateString) return "fecha no disponible";
+    try {
+      const date = new Date(dateString);
+      return date.toLocaleString("es-ES", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+      });
+    } catch {
+      return "fecha inválida";
+    }
+  };
+
+  const fetchHistorial = async (page = 0, estado?: string) => {
+    setHistorialLoading(true);
+    try {
+      const payload: any = { page, size: historialSize };
+      if (estado) payload.estado = estado;
+      const resp = await listarHistorial(payload);
+      setHistorial(resp.data.contents || []);
+      setHistorialPage(resp.data.page || 0);
+      setHistorialTotalPages(resp.data.totalPages || 0);
+    } catch (err) {
+      console.warn("Error al cargar historial:", err);
+      setHistorial([]);
+    } finally {
+      setHistorialLoading(false);
+    }
+  };
+
+  // la paginación usa directamente `fetchHistorial` desde los botones en el JSX
 
   if (isLoading) {
     return (
@@ -262,10 +313,70 @@ const DashboardEstudiante: React.FC = () => {
             <h3 className="text-lg font-semibold text-slate-900 mb-2">
               Mis Reportes
             </h3>
-            <p className="text-slate-600 mb-4">
-              Gracias por contribuir a la mejora constante de UTEC. Tus reportes
-              recientes aparecen en la sección de abajo. Que tengas un buen día.
-            </p>
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-slate-600">
+                Gracias por contribuir a la mejora constante de UTEC. Tus reportes
+                recientes aparecen a continuación.
+              </p>
+              <div className="flex items-center gap-2">
+                <select
+                  value={historialEstadoFilter}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    setHistorialEstadoFilter(v);
+                    fetchHistorial(0, v || undefined);
+                  }}
+                  className="border rounded px-2 py-1"
+                >
+                  <option value="">Todos</option>
+                  <option value="reportado">Reportado</option>
+                  <option value="en_progreso">En Progreso</option>
+                  <option value="resuelto">Resuelto</option>
+                </select>
+              </div>
+            </div>
+
+            {historialLoading ? (
+              <p className="text-sm text-slate-500">Cargando historial...</p>
+            ) : historial.length === 0 ? (
+              <p className="text-sm text-slate-500">No has reportado incidentes todavía.</p>
+            ) : (
+              <div className="space-y-3">
+                {historial.map((h) => (
+                  <div key={h.incidente_id} className="flex items-center justify-between">
+                    <div>
+                      <p className="font-medium text-slate-900">{h.titulo}</p>
+                      <p className="text-xs text-slate-500">Piso {h.piso} • {formatDate(h.created_at)}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-xs px-2 py-1 rounded-full inline-block bg-gray-100">{h.estado}</p>
+                    </div>
+                  </div>
+                ))}
+
+                <div className="flex items-center justify-between">
+                  <div className="text-sm text-slate-500">
+                    Página {historialPage + 1} de {historialTotalPages || 1}
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => fetchHistorial(Math.max(0, historialPage - 1), historialEstadoFilter || undefined)}
+                      disabled={historialPage <= 0}
+                      className="px-3 py-1 bg-white border rounded disabled:opacity-50"
+                    >
+                      Anterior
+                    </button>
+                    <button
+                      onClick={() => fetchHistorial(historialPage + 1, historialEstadoFilter || undefined)}
+                      disabled={historialPage + 1 >= (historialTotalPages || 1)}
+                      className="px-3 py-1 bg-white border rounded disabled:opacity-50"
+                    >
+                      Siguiente
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 

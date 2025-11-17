@@ -227,3 +227,20 @@ export async function listarIncidentes(
 
   return resp;
 }
+
+/**
+ * Listar Historial de un usuario (paginado)
+ * POST /incidentes/historial
+ * body: { page, size, estado?, tipo?, nivel_urgencia? }
+ */
+export async function listarHistorial(
+  payload: ListarIncidentesRequest,
+): Promise<AxiosResponse<PaginacionResponse<any>>> {
+  const api = await Api.getInstance("reportes");
+
+  return api.post<ListarIncidentesRequest, PaginacionResponse<any>>(payload, {
+    url: "/incidentes/historial",
+  });
+}
+
+

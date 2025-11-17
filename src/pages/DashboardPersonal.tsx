@@ -65,6 +65,24 @@ const DashboardPersonal: React.FC = () => {
     setIncidentes(incidentesResponse.data.contents);
   };
 
+  // aplicar filtros desde la UI de la lista personal
+  const handleApplyFilters = async (filters: {
+    estado?: string;
+    tipo?: string;
+    nivel_urgencia?: string;
+  }) => {
+    const payload: any = {
+      page: 0,
+      size: 100,
+    };
+    if (filters.estado) payload.estado = filters.estado;
+    if (filters.tipo) payload.tipo = filters.tipo;
+    if (filters.nivel_urgencia) payload.nivel_urgencia = filters.nivel_urgencia;
+
+    const incidentesResponse = await listarIncidentes(payload, usuario?.rol);
+    setIncidentes(incidentesResponse.data.contents || []);
+  };
+
   const handleCambiarEstado = async (
     incidenteId: string,
     nuevoEstado: EstadoIncidente
@@ -236,6 +254,7 @@ const DashboardPersonal: React.FC = () => {
           incidentes={incidentes}
           onCambiarEstado={handleCambiarEstado}
           onAbrirCompletar={handleAbrirCompletar}
+          onApplyFilters={handleApplyFilters}
         />
       </main>
 
