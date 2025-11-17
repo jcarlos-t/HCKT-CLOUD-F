@@ -50,7 +50,14 @@ const CrearReportePage: React.FC = () => {
 
     try {
       setIsSubmitting(true);
-      await crearIncidente(formData);
+      // Backend espera `evidencias` como un objeto con `file_base64` (no array).
+      // Construimos un payload compatible sin cambiar los tipos del formulario.
+      const payload: any = { ...formData };
+      if (Array.isArray((formData as any).evidencias) && (formData as any).evidencias.length > 0) {
+        payload.evidencias = (formData as any).evidencias[0];
+      }
+
+      await crearIncidente(payload as any);
       navigate("/dashboard");
     } catch (err) {
       console.error("Error al crear incidente:", err);
