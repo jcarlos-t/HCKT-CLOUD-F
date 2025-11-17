@@ -91,7 +91,7 @@ const ReportesList: React.FC = () => {
     <section className="space-y-4 mt-8">
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-semibold text-slate-900">
-          Mis reportes recientes
+          Reportes recientes
         </h2>
       </div>
 
