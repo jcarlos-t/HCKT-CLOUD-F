@@ -167,14 +167,7 @@ const IncidentesListaPersonal: React.FC<Props> = ({
                 </div>
 
                 <div className="flex flex-col gap-2">
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => window.open(`/dashboard/incidente/${incidente.incidente_id}`, "_blank")}
-                      className="px-3 py-1 bg-slate-100 border rounded text-sm"
-                    >
-                      Ver
-                    </button>
-                  </div>
+                  
                   {/* “reportado” = pendiente de tomar */}
                   {incidente.estado === "reportado" && (
                     <button

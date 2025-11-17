@@ -20,8 +20,7 @@ const CrearReportePage: React.FC = () => {
     tipo: "mantenimiento",
     nivel_urgencia: "medio",
   });
-  const [selectedFileName, setSelectedFileName] = useState<string | null>(null);
-  const [previewDataUrl, setPreviewDataUrl] = useState<string | null>(null);
+  
 
   const tiposIncidente: { value: TipoIncidente; label: string }[] = [
     { value: "mantenimiento", label: "Mantenimiento" },
@@ -50,14 +49,7 @@ const CrearReportePage: React.FC = () => {
 
     try {
       setIsSubmitting(true);
-      // Backend espera `evidencias` como un objeto con `file_base64` (no array).
-      // Construimos un payload compatible sin cambiar los tipos del formulario.
-      const payload: any = { ...formData };
-      if (Array.isArray((formData as any).evidencias) && (formData as any).evidencias.length > 0) {
-        payload.evidencias = (formData as any).evidencias[0];
-      }
-
-      await crearIncidente(payload as any);
+      await crearIncidente(formData as any);
       navigate("/dashboard");
     } catch (err) {
       console.error("Error al crear incidente:", err);
@@ -67,59 +59,7 @@ const CrearReportePage: React.FC = () => {
     }
   };
 
-  const fileToBase64 = (file: File): Promise<string> =>
-    new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => {
-        const result = reader.result as string;
-        // result is like: data:<mime>;base64,<base64data>
-        const parts = result.split(",");
-        if (parts.length === 2) {
-          resolve(parts[1]);
-        } else {
-          // fallback: try to strip data: prefix if present
-          const idx = result.indexOf("base64,");
-          if (idx >= 0) resolve(result.substring(idx + 7));
-          else resolve(result);
-        }
-      };
-      reader.onerror = (e) => reject(e);
-      reader.readAsDataURL(file);
-    });
-
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const f = e.target.files?.[0];
-    if (!f) return;
-
-    try {
-      const b64 = await fileToBase64(f);
-      const evidencia = {
-        filename: f.name,
-        content_type: f.type || "image/png",
-        file_base64: b64,
-      };
-
-      setFormData((prev) => ({ ...prev, evidencias: [evidencia] }));
-      setSelectedFileName(f.name);
-      // create preview data url for UI
-      const previewReader = new FileReader();
-      previewReader.onload = () => setPreviewDataUrl(previewReader.result as string);
-      previewReader.readAsDataURL(f);
-    } catch (err) {
-      console.error("Error al procesar el archivo:", err);
-      setError("No se pudo procesar la imagen seleccionada.");
-    }
-  };
-
-  const handleRemoveFile = () => {
-    setFormData((prev) => {
-      const copy = { ...prev } as any;
-      delete copy.evidencias;
-      return copy;
-    });
-    setSelectedFileName(null);
-    setPreviewDataUrl(null);
-  };
+  
 
   const handleChange = (
     e: React.ChangeEvent<
@@ -287,37 +227,7 @@ const CrearReportePage: React.FC = () => {
             />
 
             {/* Buttons */}
-            {/* Evidencia (imagen) */}
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">
-                Evidencia (imagen)
-              </label>
-              <div className="flex items-center gap-3">
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleFileChange}
-                  className="text-sm"
-                />
-                {selectedFileName && (
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm text-slate-600">{selectedFileName}</span>
-                    <button
-                      type="button"
-                      onClick={handleRemoveFile}
-                      className="text-sm text-red-600 hover:underline"
-                    >
-                      Eliminar
-                    </button>
-                  </div>
-                )}
-              </div>
-              {previewDataUrl && (
-                <div className="mt-3">
-                  <img src={previewDataUrl} alt="preview" className="max-h-48 rounded" />
-                </div>
-              )}
-            </div>
+            
             <div className="flex flex-col sm:flex-row gap-4 pt-6 border-t border-slate-200">
               <button
                 type="submit"
