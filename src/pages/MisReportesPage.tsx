@@ -25,6 +25,32 @@ const MisReportesPage: React.FC = () => {
     }
   };
 
+  const getEstadoColor = (estado?: string) => {
+    switch (estado) {
+      case "reportado":
+        return "bg-yellow-100 text-yellow-800";
+      case "en_progreso":
+        return "bg-blue-100 text-blue-800";
+      case "resuelto":
+        return "bg-green-100 text-green-800";
+      default:
+        return "bg-gray-100 text-gray-800";
+    }
+  };
+
+  const getEstadoLabel = (estado?: string) => {
+    switch (estado) {
+      case "reportado":
+        return "Reportado";
+      case "en_progreso":
+        return "En Progreso";
+      case "resuelto":
+        return "Resuelto";
+      default:
+        return "Sin estado";
+    }
+  };
+
   const fetchHistorial = async (p = 0, estado?: string) => {
     setLoading(true);
     try {
@@ -99,7 +125,9 @@ const MisReportesPage: React.FC = () => {
                     <p className="text-xs text-slate-500">Piso {h.piso} • {formatDate(h.created_at)}</p>
                   </div>
                   <div className="text-right">
-                    <p className="text-xs px-2 py-1 rounded-full inline-block bg-gray-100">{h.estado}</p>
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${getEstadoColor(h.estado)}`}>
+                      {getEstadoLabel(h.estado)}
+                    </span>
                   </div>
                 </div>
               ))}
