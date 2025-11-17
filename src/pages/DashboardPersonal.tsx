@@ -13,6 +13,7 @@ import {
 import IncidentesStatsPersonal from "../components/IncidentesStatsPersonal";
 import IncidentesListaPersonal from "../components/IncidentesListaPersonal";
 import CompletarIncidenteModal from "../components/CompletarIncidenteModal";
+import SeleccionarEmpleadoModal from "../components/SeleccionarEmpleadoModal"; // ⬅️ nuevo
 
 const DashboardPersonal: React.FC = () => {
   const navigate = useNavigate();
@@ -20,11 +21,18 @@ const DashboardPersonal: React.FC = () => {
   const [usuario, setUsuario] = useState<Usuario | null>(null);
   const [incidentes, setIncidentes] = useState<Incidente[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+
   const [selectedIncidente, setSelectedIncidente] = useState<Incidente | null>(
     null
   );
   const [showCompletarModal, setShowCompletarModal] = useState(false);
   const [detallesCompletado, setDetallesCompletado] = useState("");
+
+  // ⬇️ estados para asignar empleado cuando pasa a "en_progreso"
+  const [incidenteParaAsignar, setIncidenteParaAsignar] =
+    useState<Incidente | null>(null);
+  const [showSeleccionarEmpleadoModal, setShowSeleccionarEmpleadoModal] =
+    useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -33,7 +41,10 @@ const DashboardPersonal: React.FC = () => {
           const userResponse = await getMyUser();
           setUsuario(userResponse.data.usuario);
 
-          const incidentesResponse = await listarIncidentes({ page: 0, size: 100 });
+          const incidentesResponse = await listarIncidentes({
+            page: 0,
+            size: 100,
+          });
           setIncidentes(incidentesResponse.data.contents);
         }
       } catch (error) {
@@ -55,16 +66,24 @@ const DashboardPersonal: React.FC = () => {
     incidenteId: string,
     nuevoEstado: EstadoIncidente
   ) => {
+    // Si el nuevo estado es "en_progreso", abrimos el modal para seleccionar empleado
+    if (nuevoEstado === "en_progreso") {
+      const incidente = incidentes.find(
+        (i) => i.incidente_id === incidenteId
+      );
+      if (!incidente) return;
+
+      setIncidenteParaAsignar(incidente);
+      setShowSeleccionarEmpleadoModal(true);
+      return;
+    }
+
+    // Para otros estados (si aplica), se actualiza directo
     try {
       const payload: any = {
         incidente_id: incidenteId,
         estado: nuevoEstado,
       };
-
-      // El backend exige empleado_correo cuando estado = "en_progreso"
-      if (nuevoEstado === "en_progreso" && usuario?.correo) {
-        payload.empleado_correo = usuario.correo;
-      }
 
       await actualizarEstadoIncidente(payload);
       await recargarIncidentes();
@@ -90,8 +109,7 @@ const DashboardPersonal: React.FC = () => {
         incidente_id: selectedIncidente.incidente_id,
         estado: "resuelto",
         comentario_resolucion: detallesCompletado,
-        // si quisieras también podrías mandar empleado_correo aquí:
-        // empleado_correo: usuario?.correo,
+        // opcional: empleado_correo: usuario?.correo,
       });
 
       await recargarIncidentes();
@@ -102,6 +120,27 @@ const DashboardPersonal: React.FC = () => {
     } catch (error) {
       console.error("Error al completar incidente:", error);
       alert("No se pudo completar el incidente");
+    }
+  };
+
+  // ⬇️ cuando el usuario elige un empleado en el modal
+  const handleConfirmEmpleado = async (correoEmpleado: string) => {
+    if (!incidenteParaAsignar) return;
+
+    try {
+      await actualizarEstadoIncidente({
+        incidente_id: incidenteParaAsignar.incidente_id,
+        estado: "en_progreso",
+        empleado_correo: correoEmpleado, // correo seleccionado del modal
+      });
+
+      await recargarIncidentes();
+
+      setShowSeleccionarEmpleadoModal(false);
+      setIncidenteParaAsignar(null);
+    } catch (error) {
+      console.error("Error al asignar empleado:", error);
+      alert("No se pudo asignar el empleado al incidente");
     }
   };
 
@@ -208,6 +247,15 @@ const DashboardPersonal: React.FC = () => {
           setSelectedIncidente(null);
           setDetallesCompletado("");
         }}
+      />
+
+      <SeleccionarEmpleadoModal
+        isOpen={showSeleccionarEmpleadoModal}
+        onClose={() => {
+          setShowSeleccionarEmpleadoModal(false);
+          setIncidenteParaAsignar(null);
+        }}
+        onConfirm={handleConfirmEmpleado}
       />
     </div>
   );

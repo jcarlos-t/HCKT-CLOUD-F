@@ -71,6 +71,22 @@ const ReportesList: React.FC = () => {
     }
   };
 
+  const formatDate = (dateString?: string) => {
+    if (!dateString) return "fecha no disponible";
+    try {
+      const date = new Date(dateString);
+      return date.toLocaleString("es-ES", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+    } catch {
+      return "fecha inválida";
+    }
+  };
+
   return (
     <section className="space-y-4 mt-8">
       <div className="flex items-center justify-between">
@@ -102,7 +118,7 @@ const ReportesList: React.FC = () => {
         <div className="space-y-4">
           {incidentes.map((incidente) => (
             <div
-              key={incidente.incidente_id ?? (incidente as any).id}
+              key={incidente.incidente_id}
               className="bg-white rounded-xl shadow-sm border border-sky-100 p-4 hover:shadow-md transition"
             >
               <div className="flex items-start justify-between gap-4">
@@ -119,10 +135,7 @@ const ReportesList: React.FC = () => {
                     <div className="flex items-center gap-1">
                       <span>📍</span>
                       <span>
-                        Piso {incidente.piso}
-                        {incidente.ubicacion
-                          ? ` - (${incidente.ubicacion.x}, ${incidente.ubicacion.y})`
-                          : " - ubicación no registrada"}
+                        Piso {incidente.piso} - {formatDate(incidente.created_at)}
                       </span>
                     </div>
                     <div className="flex items-center gap-1">

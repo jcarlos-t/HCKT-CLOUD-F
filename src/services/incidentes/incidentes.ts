@@ -38,6 +38,7 @@ export interface Incidente {
   nivel_urgencia: NivelUrgencia;
   estado?: EstadoIncidente;
   usuario_correo?: string;
+  created_at?: string
 }
 
 /**
