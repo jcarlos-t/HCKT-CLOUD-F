@@ -10,7 +10,6 @@ import CrearReportePage from "../pages/CrearReportePage";
 import App from "../App";
 import PerfilEstudiantePage from "../pages/PerfilEstudiantePage";
 import MisReportesPage from "../pages/MisReportesPage";
-import IncidenteDetallePage from "../pages/IncidenteDetallePage";
 
 export const router = createBrowserRouter([
   {
@@ -40,13 +39,7 @@ export const router = createBrowserRouter([
         ],
       },
 
-      // Rutas para personal administrativo y autoridad (detalle de incidente)
-      {
-        element: <RoleProtectedRoute allowedRoles={["personal_administrativo", "autoridad"]} />,
-        children: [
-          { path: "dashboard/incidente/:id", element: <IncidenteDetallePage /> },
-        ],
-      },
+      // (detalle de incidente removido temporalmente)
 
       // Rutas solo para estudiantes
       {
